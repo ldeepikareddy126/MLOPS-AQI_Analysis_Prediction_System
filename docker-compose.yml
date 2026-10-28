@@ -1,0 +1,350 @@
+# =============================================================================
+# docker-compose.yml — AQI MLOps Full Stack
+#
+# Stage A services: postgres, airflow-init, airflow-webserver,
+#                   airflow-scheduler, dashboard, pgadmin
+# Stage B services (profile=mlops): mlflow-server, api
+#
+# Usage:
+#   Stage A only:   docker compose --profile stagea up -d --build
+#   Full stack:     docker compose --profile stagea --profile mlops up -d --build
+#   Or via Makefile: make up (stagea) | make up-all (all)
+#
+# Ports:
+#   Airflow:    http://localhost:${AIRFLOW_WEBSERVER_PORT:-8082}
+#   Streamlit:  http://localhost:8501
+#   pgAdmin:    http://localhost:5050
+#   MLflow:     http://localhost:5000   (Stage B)
+#   FastAPI:    http://localhost:8000   (Stage B)
+#   Postgres:   localhost:5432
+# =============================================================================
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: airflow/Dockerfile
+  env_file:
+    - .env
+  environment:
+    # Airflow core
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION:-false}
+    AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-false}
+    AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
+    AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 30
+    # Airflow metadata DB (separate from AQI warehouse)
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${AIRFLOW_DB_NAME}
+    AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: false
+    # Webserver
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "false"
+    AIRFLOW__WEBSERVER__BASE_URL: http://localhost:${AIRFLOW_WEBSERVER_PORT:-8082}
+    # Logging
+    AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+    AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+    PYTHONPATH: /opt/airflow_src/src:/opt/airflow_src/mlops/src
+    AQI_CONFIG_DIR: /opt/airflow/config
+    AQI_DATA_DIR: /opt/airflow/data
+    AQI_SQL_DIR: /opt/airflow/sql
+    # Pipeline env vars passed through
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    AQI_DB_NAME: ${AQI_DB_NAME}
+    OPENAQ_API_KEY: ${OPENAQ_API_KEY}
+    KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+    KAGGLE_KEY: ${KAGGLE_KEY}
+    PIPELINE_BACKFILL_START: ${PIPELINE_BACKFILL_START:-2022-01-01}
+    DQ_REJECTION_THRESHOLD: ${DQ_REJECTION_THRESHOLD:-0.20}
+    MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow-server:5000}
+    MLFLOW_DB_NAME: ${MLFLOW_DB_NAME:-mlflow_backend}
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/logs:/opt/airflow/logs
+    - ./src:/opt/airflow_src/src
+    - ./mlops:/opt/airflow_src/mlops
+    - ./tests:/opt/airflow_src/tests
+    - ./conftest.py:/opt/airflow_src/conftest.py:ro
+    - ./config:/opt/airflow/config
+    - ./data:/opt/airflow/data
+    - ./sql:/opt/airflow/sql
+    - ./scripts:/opt/airflow/scripts
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - aqi_net
+  restart: on-failure
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — single server, three databases:
+  #   aqi_warehouse   (pipeline data: raw, staging, clean, analytics, ops, monitoring)
+  #   airflow_metadata (Airflow scheduler/webserver metadata)
+  #   mlflow_backend   (MLflow tracking, Stage B)
+  #
+  # Design decision: one server → simpler ops, fewer containers, still fully
+  # isolated by connection string and user grants.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    profiles: [lite, stagea, mlops]
+    container_name: aqi_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AQI_DB_NAME}          # Default DB; others created by init script
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/ddl/init_databases.sql:/docker-entrypoint-initdb.d/00_init_databases.sql:ro
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${AQI_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - aqi_net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Airflow init — runs once: DB migration + admin user creation
+  # Startup order: postgres (healthy) → airflow-init → webserver/scheduler
+  # ---------------------------------------------------------------------------
+  airflow-init:
+    <<: *airflow-common
+    profiles: [lite, stagea, mlops]
+    container_name: aqi_airflow_init
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        echo "Running Airflow DB migration..."
+        airflow db migrate
+        echo "Creating admin user (idempotent)..."
+        airflow users create \
+          --username "${AIRFLOW_ADMIN_USERNAME:-admin}" \
+          --password "${AIRFLOW_ADMIN_PASSWORD:-admin}" \
+          --firstname "${AIRFLOW_ADMIN_FIRSTNAME:-AQI}" \
+          --lastname "${AIRFLOW_ADMIN_LASTNAME:-Admin}" \
+          --role Admin \
+          --email "${AIRFLOW_ADMIN_EMAIL:-admin@aqi-mlops.local}" \
+          || true
+        echo "Running database schema initialisation..."
+        python /opt/airflow/scripts/init_db.py
+        echo 'Airflow init complete'
+    # airflow-init must not restart indefinitely — it's a one-shot init job
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Airflow Webserver — UI at http://localhost:8080
+  # ---------------------------------------------------------------------------
+  airflow-webserver:
+    <<: *airflow-common
+    profiles: [lite, stagea, mlops]
+    container_name: aqi_airflow_webserver
+    command: airflow webserver
+    ports:
+      - "${AIRFLOW_WEBSERVER_PORT:-8082}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ---------------------------------------------------------------------------
+  # Airflow Scheduler
+  # ---------------------------------------------------------------------------
+  airflow-scheduler:
+    <<: *airflow-common
+    profiles: [lite, stagea, mlops]
+    container_name: aqi_airflow_scheduler
+    command: airflow scheduler
+    healthcheck:
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--local"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ---------------------------------------------------------------------------
+  # Streamlit Dashboard — http://localhost:8501
+  # ---------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    profiles: [lite, stagea, mlops]
+    container_name: aqi_dashboard
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      AQI_DB_NAME: ${AQI_DB_NAME}
+      API_BASE_URL: http://api:${API_PORT:-8000}
+    volumes:
+      - ./dashboard:/app
+      - ./config:/app/config
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aqi_net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin — DB browser at http://localhost:5050
+  # ---------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:8.4
+    profiles: [lite, stagea, mlops]
+    container_name: aqi_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aqi_net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # MLflow Tracking Server — http://localhost:5000  [Stage B]
+  # Backend: PostgreSQL (mlflow_backend DB)
+  # Artifact store: named Docker volume /mlflow/artifacts
+  # ---------------------------------------------------------------------------
+  mlflow-server:
+    build:
+      context: .
+      dockerfile: mlops/Dockerfile.mlflow
+    image: aqi-mlops-mlflow:3.2.0
+    profiles: [mlops]
+    container_name: aqi_mlflow
+    env_file:
+      - .env
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${MLFLOW_DB_NAME}
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: mlflow-artifacts:/
+    command: >
+      mlflow server
+        --backend-store-uri postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${MLFLOW_DB_NAME}
+        --default-artifact-root mlflow-artifacts:/
+        --serve-artifacts
+        --artifacts-destination /mlflow/artifacts
+        --host 0.0.0.0
+        --port 5000
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    ports:
+      - "5000:5000"
+    healthcheck:
+      # MLflow does not expose /health; use the experiments list API which is
+      # always available when the server is up.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/2.0/mlflow/experiments/get-by-name?experiment_name=Default', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - aqi_net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # FastAPI Inference API — http://localhost:8000  [Stage B]
+  # Built from mlops/Dockerfile.api
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: mlops/Dockerfile.api
+    profiles: [mlops]
+    container_name: aqi_api
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      AQI_DB_NAME: ${AQI_DB_NAME}
+      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+      API_RELOAD_TOKEN: ${API_RELOAD_TOKEN}
+      API_PORT: ${API_PORT:-8000}
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts:ro
+      - ./config:/app/config:ro
+    ports:
+      - "${API_PORT:-8000}:${API_PORT:-8000}"
+    healthcheck:
+      # Use fixed port 8000 — shell variable expansion does not work in JSON array form
+      test: ["CMD", "curl", "--fail", "-s", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow-server:
+        condition: service_healthy
+    networks:
+      - aqi_net
+    restart: unless-stopped
+
+# ---------------------------------------------------------------------------
+# Named volumes
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: aqi_postgres_data
+  pgadmin_data:
+    name: aqi_pgadmin_data
+  mlflow_artifacts:
+    name: aqi_mlflow_artifacts
+
+# ---------------------------------------------------------------------------
+# Network
+# ---------------------------------------------------------------------------
+networks:
+  aqi_net:
+    name: aqi_network
+    driver: bridge

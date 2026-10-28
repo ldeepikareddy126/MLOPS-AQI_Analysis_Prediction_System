@@ -1,0 +1,49 @@
+# =============================================================================
+# .dockerignore — AQI MLOps Project
+# Excludes files that should not be sent to the Docker build context.
+# =============================================================================
+
+# Version control
+.git
+.gitignore
+
+# Secrets & environment (NEVER bake into images)
+.env
+.env.local
+
+# Python caches
+*.pyc
+*.pyo
+__pycache__
+*.egg-info
+.eggs
+dist
+build
+*.whl
+
+# Test artifacts
+.pytest_cache
+.coverage
+htmlcov
+.tox
+*.test.log
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+*.DS_Store
+
+# Airflow runtime state (mounted as volumes at runtime)
+airflow/logs
+logs
+
+# Large data directories (mounted as volumes at runtime)
+data
+
+# Documentation
+docs
+
+# Log files
+*.log

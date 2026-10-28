@@ -1,0 +1,43 @@
+# =============================================================================
+# source_priority.yaml — Cross-source deduplication priority rules
+#
+# When the same observation (station_id_canonical, pollutant, timestamp_utc)
+# exists in multiple source systems, the row from the highest-priority source
+# is kept. Priority 1 = highest (kept first).
+#
+# This is configurable — change priority values here without touching code.
+# =============================================================================
+
+priority:
+  openaq:
+    priority: 1
+    description: "OpenAQ API — real-time monitored data, most recent"
+    required: true        # Pipeline fails loudly if zero rows downstream
+  cpcb:
+    priority: 2
+    description: "CPCB portal — India-specific official measurements"
+    required: false       # Optional; logged as NOT PROVIDED if no files
+  kaggle:
+    priority: 3
+    description: "Kaggle historical datasets — backfill / baseline"
+    required: false       # Optional fallback source; absence must not block OpenAQ ingestion
+
+# Sources that are never used for AQI computation (weather only)
+weather_only_sources:
+  - open_meteo
+
+# open_meteo priority is irrelevant for dedup (it has no pollutant data)
+open_meteo:
+  priority: null
+  description: "Open-Meteo API — weather enrichment only (no pollutants)"
+  required: true
+
+# Deduplication key columns
+dedup_key:
+  - station_id_canonical
+  - pollutant_code
+  - timestamp_utc
+
+# When multiple rows have the same key and same priority (should not happen
+# within a single source), keep the row with the latest ingestion timestamp.
+tiebreak_column: ingested_at

@@ -1,0 +1,51 @@
+# =============================================================================
+# Airflow requirements.txt
+# IMPORTANT: All versions here are compatible with Airflow 2.10.5 + Python 3.11
+# and must not conflict with Airflow's own pinned dependencies.
+# The --constraint flag in the Dockerfile enforces this automatically.
+# =============================================================================
+
+# Database connectivity
+psycopg2-binary>=2.9.9
+SQLAlchemy>=1.4.40,<2.0      # Airflow 2.x requires SQLAlchemy 1.4.x (NOT 2.x)
+
+# HTTP + retries (for collectors)
+requests>=2.31.0
+urllib3>=1.26.18
+
+# Data processing
+pandas>=2.1.4
+numpy>=1.26.4
+pyarrow>=14.0.0
+
+# Configuration
+PyYAML>=6.0.1
+
+# Date/time utilities
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# File checksums + run metadata
+xxhash>=3.4.1
+
+# Kaggle API client
+kaggle>=1.6.6
+
+# OpenAQ collector utility
+tenacity>=8.2.3         # Retry with exponential backoff
+
+# Excel reading (for CPCB files)
+openpyxl>=3.1.2
+xlrd>=2.0.1
+
+# Airflow providers (declared here so constraints can resolve them)
+apache-airflow-providers-postgres>=5.11.0
+apache-airflow-providers-http>=4.10.0
+
+# Stage B: ML training and monitoring
+mlflow==3.2.0
+scikit-learn==1.9.1
+scipy==1.17.1
+
+# Repository test commands are run inside the Airflow image via Makefile.
+pytest>=8.2,<9

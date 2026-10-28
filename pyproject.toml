@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aqi-pipeline"
+version = "0.1.0"
+description = "AQI data engineering pipeline (raw → staging → clean → analytics)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "mlops/src"]
+testpaths = ["tests", "mlops/tests"]
+addopts = ["--import-mode=importlib"]

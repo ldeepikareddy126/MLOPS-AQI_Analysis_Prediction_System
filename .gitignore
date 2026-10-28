@@ -1,0 +1,91 @@
+# =============================================================================
+# .gitignore — AQI MLOps Project
+# =============================================================================
+
+# --------------- Secrets / Environment ---------------
+.env
+*.pem
+*.key
+kaggle.json
+
+# --------------- Raw & External Data -----------------
+data/raw/
+data/external/
+# Keep directory structure but not data files
+!data/raw/.gitkeep
+!data/external/cpcb/.gitkeep
+!data/external/kaggle/.gitkeep
+
+# --------------- Logs --------------------------------
+logs/
+airflow/logs/
+*.log
+
+# --------------- Python ------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+ENV/
+
+# --------------- Testing -----------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# --------------- Jupyter / IPython ------------------
+.ipynb_checkpoints
+*.ipynb
+
+# --------------- IDEs --------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --------------- OS ----------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --------------- Docker ------------------------------
+# Keep Dockerfiles, ignore build caches
+.docker/
+
+# --------------- MLflow (Stage B) -------------------
+mlruns/
+mlflow_artifacts/
+
+# --------------- Model artifacts ---------------------
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.onnx
+# Exception: test fixtures
+!tests/fixtures/*.pkl
+
+# --------------- Node (if any frontend tools used) ---
+node_modules/

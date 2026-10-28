@@ -1,0 +1,77 @@
+# =============================================================================
+# cities.yaml — Target cities configuration
+# Modify to add/remove cities or change the primary prediction target.
+# =============================================================================
+
+cities:
+  - id: delhi
+    name: Delhi
+    display_name: Delhi
+    state: Delhi
+    country: IN
+    primary: true          # Primary prediction target for Stage B ML models
+    lat: 28.6139
+    lon: 77.2090
+    openaq_location_ids: [] # Populated by collector on first run
+    timezone: Asia/Kolkata
+
+  - id: mumbai
+    name: Mumbai
+    display_name: Mumbai
+    state: Maharashtra
+    country: IN
+    primary: false
+    lat: 19.0760
+    lon: 72.8777
+    openaq_location_ids: []
+    timezone: Asia/Kolkata
+
+  - id: kolkata
+    name: Kolkata
+    display_name: Kolkata
+    state: West Bengal
+    country: IN
+    primary: false
+    lat: 22.5726
+    lon: 88.3639
+    openaq_location_ids: []
+    timezone: Asia/Kolkata
+
+  - id: chennai
+    name: Chennai
+    display_name: Chennai
+    state: Tamil Nadu
+    country: IN
+    primary: false
+    lat: 13.0827
+    lon: 80.2707
+    openaq_location_ids: []
+    timezone: Asia/Kolkata
+
+  - id: bengaluru
+    name: Bengaluru
+    display_name: Bengaluru
+    state: Karnataka
+    country: IN
+    primary: false
+    lat: 12.9716
+    lon: 77.5946
+    openaq_location_ids: []
+    timezone: Asia/Kolkata
+
+  - id: ahmedabad
+    name: Ahmedabad
+    display_name: Ahmedabad
+    state: Gujarat
+    country: IN
+    primary: false
+    lat: 23.0225
+    lon: 72.5714
+    openaq_location_ids: []
+    timezone: Asia/Kolkata
+
+# Bounding box search radius in km around city centre for station matching
+station_search_radius_km: 50
+
+# Coordinate proximity threshold for cross-source station matching (degrees)
+station_match_proximity_deg: 0.05

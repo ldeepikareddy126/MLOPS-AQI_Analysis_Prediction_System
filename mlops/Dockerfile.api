@@ -1,0 +1,43 @@
+# =============================================================================
+# mlops/Dockerfile.api — FastAPI inference service
+# Python 3.11 slim, installs aqi-pipeline + aqi-mlops packages
+# =============================================================================
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies first (layer caching)
+RUN pip install --no-cache-dir --upgrade pip "setuptools<81" wheel
+COPY mlops/requirements.api.txt /app/requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 -r /app/requirements.txt
+
+# Install aqi-pipeline (Stage A shared utilities)
+COPY pyproject.toml /opt/aqi_pipeline/pyproject.toml
+COPY src/ /opt/aqi_pipeline/src/
+RUN pip install --no-cache-dir -e /opt/aqi_pipeline/
+
+# Install aqi-mlops (Stage B)
+COPY mlops/pyproject.toml /opt/aqi_mlops/pyproject.toml
+COPY mlops/src/ /opt/aqi_mlops/src/
+RUN pip install --no-cache-dir -e /opt/aqi_mlops/
+
+# Config (read-only at runtime)
+COPY config/ /app/config/
+
+ENV PYTHONPATH="/opt/aqi_pipeline/src:/opt/aqi_mlops/src:${PYTHONPATH}"
+ENV AQI_CONFIG_DIR=/app/config
+
+EXPOSE ${API_PORT:-8000}
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=30s \
+    CMD curl -f http://localhost:${API_PORT:-8000}/health || exit 1
+
+CMD ["sh", "-c", "uvicorn aqi_mlops.serving:app --host 0.0.0.0 --port ${API_PORT:-8000} --workers 2"]

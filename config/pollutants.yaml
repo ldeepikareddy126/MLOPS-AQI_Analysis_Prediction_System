@@ -1,0 +1,173 @@
+# =============================================================================
+# pollutants.yaml — Canonical pollutant definitions
+# Source: CPCB National Ambient Air Quality Standards (NAAQS) and NAAQs
+# All stored values are in the standard units listed below.
+# =============================================================================
+
+pollutants:
+  PM2.5:
+    canonical_code: PM2.5
+    display_name: "PM2.5 (Fine Particulate Matter)"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    # Physical range for validation (values outside → rejected)
+    physical_min: 0.0
+    physical_max: 2000.0
+    # Sentinel / fill values to treat as missing
+    sentinel_values: [-999, -9999, 999999, 9999]
+    # AQI averaging window: 24-hour mean per CPCB
+    aqi_averaging: "24h_mean"
+    openaq_parameter_names: ["pm25", "PM25", "pm2.5", "PM2.5"]
+    cpcb_column_aliases: ["PM2.5", "pm2_5", "PM25"]
+    unit_conversions:
+      "µg/m³": 1.0   # identity
+      "ug/m3": 1.0
+      "mg/m³": 1000.0
+
+  PM10:
+    canonical_code: PM10
+    display_name: "PM10 (Coarse Particulate Matter)"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 2000.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    aqi_averaging: "24h_mean"
+    openaq_parameter_names: ["pm10", "PM10"]
+    cpcb_column_aliases: ["PM10", "pm10"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+      "mg/m³": 1000.0
+
+  NO2:
+    canonical_code: NO2
+    display_name: "Nitrogen Dioxide"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 1000.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    aqi_averaging: "24h_mean"
+    openaq_parameter_names: ["no2", "NO2"]
+    cpcb_column_aliases: ["NO2", "no2"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+      # ppm → µg/m³ at 25°C, 1 atm: multiply by 1882.9
+      "ppm": 1882.9
+      "ppb": 1.8829
+
+  SO2:
+    canonical_code: SO2
+    display_name: "Sulphur Dioxide"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 1000.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    aqi_averaging: "24h_mean"
+    openaq_parameter_names: ["so2", "SO2"]
+    cpcb_column_aliases: ["SO2", "so2"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+      # ppm → µg/m³ at 25°C, 1 atm: multiply by 2620.0
+      "ppm": 2620.0
+      "ppb": 2.620
+
+  CO:
+    canonical_code: CO
+    display_name: "Carbon Monoxide"
+    standard_unit: "mg/m³"
+    storage_unit: "mg/m³"
+    physical_min: 0.0
+    physical_max: 100.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    # AQI averaging window: 8-hour maximum per CPCB
+    aqi_averaging: "8h_max"
+    openaq_parameter_names: ["co", "CO"]
+    cpcb_column_aliases: ["CO", "co"]
+    unit_conversions:
+      "mg/m³": 1.0
+      "µg/m³": 0.001
+      "ug/m3": 0.001
+      # ppm → mg/m³ at 25°C, 1 atm: multiply by 1.1642
+      "ppm": 1.1642
+      "ppb": 0.0011642
+
+  O3:
+    canonical_code: O3
+    display_name: "Ozone"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 1000.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    # AQI averaging window: 8-hour maximum per CPCB
+    aqi_averaging: "8h_max"
+    openaq_parameter_names: ["o3", "O3", "ozone"]
+    cpcb_column_aliases: ["O3", "o3", "Ozone"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+      # ppm → µg/m³ at 25°C, 1 atm: multiply by 1960.0
+      "ppm": 1960.0
+      "ppb": 1.960
+
+  NH3:
+    canonical_code: NH3
+    display_name: "Ammonia"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 1000.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    aqi_averaging: "24h_mean"
+    openaq_parameter_names: ["nh3", "NH3", "ammonia"]
+    cpcb_column_aliases: ["NH3", "nh3", "Ammonia"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+      "ppm": 718.0
+      "ppb": 0.718
+
+  NOx:
+    canonical_code: NOx
+    display_name: "Nitrogen Oxides (NOx)"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 2000.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    aqi_averaging: "24h_mean"
+    # NOx is informational; sub-index not computed from NOx directly
+    openaq_parameter_names: ["nox", "NOx", "NOX"]
+    cpcb_column_aliases: ["NOx", "nox", "NOX"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+
+  Pb:
+    canonical_code: Pb
+    display_name: "Lead"
+    standard_unit: "µg/m³"
+    storage_unit: "µg/m³"
+    physical_min: 0.0
+    physical_max: 10.0
+    sentinel_values: [-999, -9999, 999999, 9999]
+    aqi_averaging: "24h_mean"
+    openaq_parameter_names: ["pb", "Pb", "lead"]
+    cpcb_column_aliases: ["Pb", "pb", "Lead"]
+    unit_conversions:
+      "µg/m³": 1.0
+      "ug/m3": 1.0
+
+# Pollutants used for CPCB AQI sub-index calculation (must have ≥1 of these, PM required)
+aqi_pollutants: [PM2.5, PM10, NO2, SO2, CO, O3, NH3, Pb]
+aqi_required_minimum: 3          # Minimum pollutants needed to compute AQI
+aqi_pm_required: true            # At least one PM (PM2.5 or PM10) must be present
+
+# Temperature and pressure assumptions for ppm/ppb conversions (ISA standard)
+conversion_temperature_celsius: 25.0
+conversion_pressure_hpa: 1013.25

@@ -1,0 +1,4 @@
+Station Name,City,Date,Time,Parameter,Value,Unit
+"ITO, Delhi - CPCB",Delhi,2023-01-01,12:00:00,PM2.5,195.4,ug/m3
+"ITO, Delhi - CPCB",Delhi,2023-01-01,12:00:00,NO2,62.1,ug/m3
+"ITO, Delhi - CPCB",Delhi,2023-01-01,12:00:00,CO,2300,ug/m3

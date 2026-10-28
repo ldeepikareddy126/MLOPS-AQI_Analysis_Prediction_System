@@ -1,0 +1,168 @@
+# =============================================================================
+# aqi_breakpoints.yaml — Indian CPCB National AQI Breakpoint Table
+#
+# Source: Central Pollution Control Board (CPCB), India
+#   "National Air Quality Index" Technical Document, 2014
+#   URL: https://cpcb.nic.in/National-Air-Quality-Index.php
+#   ISBN: Not applicable (government publication)
+#
+# AQI Formula:
+#   Sub-Index_p = [(AQI_Hi - AQI_Lo) / (BP_Hi - BP_Lo)] * (Cp - BP_Lo) + AQI_Lo
+#   where Cp = observed concentration, BP = breakpoint concentration
+#   Final AQI = max(all sub-indices where at least one PM sub-index exists)
+#
+# Categories:
+#   0–50    Good
+#   51–100  Satisfactory
+#   101–200 Moderate
+#   201–300 Poor
+#   301–400 Very Poor
+#   401–500 Severe
+# =============================================================================
+
+categories:
+  - name: Good
+    aqi_low: 0
+    aqi_high: 50
+    color_hex: "#00b050"
+    description: "Minimal impact on health"
+  - name: Satisfactory
+    aqi_low: 51
+    aqi_high: 100
+    color_hex: "#92d050"
+    description: "Minor breathing discomfort to sensitive people"
+  - name: Moderate
+    aqi_low: 101
+    aqi_high: 200
+    color_hex: "#ffff00"
+    description: "Breathing discomfort to people with lung/heart disease, children, elderly"
+  - name: Poor
+    aqi_low: 201
+    aqi_high: 300
+    color_hex: "#ff9900"
+    description: "Breathing discomfort to most people on prolonged exposure"
+  - name: "Very Poor"
+    aqi_low: 301
+    aqi_high: 400
+    color_hex: "#ff0000"
+    description: "Respiratory illness on prolonged exposure"
+  - name: Severe
+    aqi_low: 401
+    aqi_high: 500
+    color_hex: "#c00000"
+    description: "Affects healthy people; seriously impacts those with existing diseases"
+
+# Breakpoints: list of {bp_low, bp_high, aqi_low, aqi_high}
+# Concentration ranges are INCLUSIVE on both ends.
+# Values above the highest bp_high are clamped to AQI 500 (Severe).
+breakpoints:
+  PM2.5:
+    unit: "µg/m³"
+    averaging: "24h_mean"
+    ranges:
+      - {bp_low: 0.0,   bp_high: 30.0,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 30.1,  bp_high: 60.0,  aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 60.1,  bp_high: 90.0,  aqi_low: 101, aqi_high: 200}
+      - {bp_low: 90.1,  bp_high: 120.0, aqi_low: 201, aqi_high: 300}
+      - {bp_low: 120.1, bp_high: 250.0, aqi_low: 301, aqi_high: 400}
+      - {bp_low: 250.1, bp_high: 500.0, aqi_low: 401, aqi_high: 500}
+
+  PM10:
+    unit: "µg/m³"
+    averaging: "24h_mean"
+    ranges:
+      - {bp_low: 0.0,   bp_high: 50.0,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 51.0,  bp_high: 100.0, aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 101.0, bp_high: 250.0, aqi_low: 101, aqi_high: 200}
+      - {bp_low: 251.0, bp_high: 350.0, aqi_low: 201, aqi_high: 300}
+      - {bp_low: 351.0, bp_high: 430.0, aqi_low: 301, aqi_high: 400}
+      - {bp_low: 431.0, bp_high: 600.0, aqi_low: 401, aqi_high: 500}
+
+  NO2:
+    unit: "µg/m³"
+    averaging: "24h_mean"
+    ranges:
+      - {bp_low: 0.0,   bp_high: 40.0,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 40.1,  bp_high: 80.0,  aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 80.1,  bp_high: 180.0, aqi_low: 101, aqi_high: 200}
+      - {bp_low: 180.1, bp_high: 280.0, aqi_low: 201, aqi_high: 300}
+      - {bp_low: 280.1, bp_high: 400.0, aqi_low: 301, aqi_high: 400}
+      - {bp_low: 400.1, bp_high: 800.0, aqi_low: 401, aqi_high: 500}
+
+  SO2:
+    unit: "µg/m³"
+    averaging: "24h_mean"
+    ranges:
+      - {bp_low: 0.0,   bp_high: 40.0,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 40.1,  bp_high: 80.0,  aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 80.1,  bp_high: 380.0, aqi_low: 101, aqi_high: 200}
+      - {bp_low: 380.1, bp_high: 800.0, aqi_low: 201, aqi_high: 300}
+      - {bp_low: 800.1, bp_high: 1600.0,aqi_low: 301, aqi_high: 400}
+      - {bp_low: 1600.1,bp_high: 2100.0,aqi_low: 401, aqi_high: 500}
+
+  CO:
+    unit: "mg/m³"
+    averaging: "8h_max"
+    ranges:
+      - {bp_low: 0.0,  bp_high: 1.0,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 1.1,  bp_high: 2.0,  aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 2.1,  bp_high: 10.0, aqi_low: 101, aqi_high: 200}
+      - {bp_low: 10.1, bp_high: 17.0, aqi_low: 201, aqi_high: 300}
+      - {bp_low: 17.1, bp_high: 34.0, aqi_low: 301, aqi_high: 400}
+      - {bp_low: 34.1, bp_high: 50.0, aqi_low: 401, aqi_high: 500}
+
+  O3:
+    unit: "µg/m³"
+    averaging: "8h_max"
+    ranges:
+      - {bp_low: 0.0,   bp_high: 50.0,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 50.1,  bp_high: 100.0, aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 100.1, bp_high: 168.0, aqi_low: 101, aqi_high: 200}
+      - {bp_low: 168.1, bp_high: 208.0, aqi_low: 201, aqi_high: 300}
+      - {bp_low: 208.1, bp_high: 748.0, aqi_low: 301, aqi_high: 400}
+      - {bp_low: 748.1, bp_high: 1000.0,aqi_low: 401, aqi_high: 500}
+
+  NH3:
+    unit: "µg/m³"
+    averaging: "24h_mean"
+    ranges:
+      - {bp_low: 0.0,   bp_high: 200.0, aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 200.1, bp_high: 400.0, aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 400.1, bp_high: 800.0, aqi_low: 101, aqi_high: 200}
+      - {bp_low: 800.1, bp_high: 1200.0,aqi_low: 201, aqi_high: 300}
+      - {bp_low: 1200.1,bp_high: 1800.0,aqi_low: 301, aqi_high: 400}
+      - {bp_low: 1800.1,bp_high: 2400.0,aqi_low: 401, aqi_high: 500}
+
+  Pb:
+    unit: "µg/m³"
+    averaging: "24h_mean"
+    ranges:
+      - {bp_low: 0.0,  bp_high: 0.5,  aqi_low: 0,   aqi_high: 50}
+      - {bp_low: 0.5,  bp_high: 1.0,  aqi_low: 51,  aqi_high: 100}
+      - {bp_low: 1.0,  bp_high: 2.0,  aqi_low: 101, aqi_high: 200}
+      - {bp_low: 2.0,  bp_high: 3.0,  aqi_low: 201, aqi_high: 300}
+      - {bp_low: 3.0,  bp_high: 3.5,  aqi_low: 301, aqi_high: 400}
+      - {bp_low: 3.5,  bp_high: 5.0,  aqi_low: 401, aqi_high: 500}
+
+# Known worked examples for unit testing (verify AQI calculation)
+test_cases:
+  - description: "PM2.5=45 µg/m³ → AQI 75 (Satisfactory)"
+    pollutant: PM2.5
+    concentration: 45.0
+    expected_sub_index: 75
+    expected_category: Satisfactory
+  - description: "PM2.5=120 µg/m³ → AQI 300 (Poor)"
+    pollutant: PM2.5
+    concentration: 120.0
+    expected_sub_index: 300
+    expected_category: Poor
+  - description: "PM10=200 µg/m³ → AQI 167 (Moderate)"
+    pollutant: PM10
+    concentration: 200.0
+    expected_sub_index: 167
+    expected_category: Moderate
+  - description: "CO=5 mg/m³ → AQI 137 (Moderate)"
+    pollutant: CO
+    concentration: 5.0
+    expected_sub_index: 137
+    expected_category: Moderate
