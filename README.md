@@ -13,7 +13,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-111%20passed-brightgreen)
 
-[Overview](#-overview) · [Screenshots](#%EF%B8%8F-screenshots) · [Architecture](#%EF%B8%8F-architecture) · [Quick start](#-quick-start) · [Results](#-results-and-honest-limitations) · [Project structure](#-project-structure) · [Documentation](#-documentation)
+[Overview](#-overview) · [Architecture](#%EF%B8%8F-architecture) · [Quick start](#-quick-start) · [Results](#-results-and-honest-limitations) · [Project structure](#-project-structure) · [Documentation](#-documentation)
 
 </div>
 
@@ -57,19 +57,6 @@ The prediction targets are the **next calendar day's city-level mean AQI** (regr
 - **Leakage-safe modeling.** Lag/rolling features use the past only, the split is chronological, and imputation/scaling are fitted on training rows only.
 - **Guarded promotion.** A new regressor is promoted only if its MAE beats the Production model; v2 failed that test and was archived.
 - **Honest operations.** Test traffic is separated from production telemetry after it distorted early alerts, and failed Airflow runs stay in the history.
-
----
-
-## 🖼️ Screenshots
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/01_dashboard_overview.png" alt="Streamlit dashboard overview" width="450"><br><sub><b>Streamlit dashboard:</b> warehouse totals, 30-day city trends, category mix</sub></td>
-    <td align="center"><img src="docs/screenshots/07_airflow_etl_run.png" alt="Airflow ETL graph" width="450"><br><sub><b>Airflow:</b> <code>aqi_etl_pipeline</code> graph and run history</sub></td>
-  </tr>
-</table>
-
-<sub>Dated evidence from the documented verification run. More views are in <a href="docs/screenshots/"><code>docs/screenshots/</code></a>.</sub>
 
 ---
 
@@ -298,7 +285,7 @@ aqi-mlops/
 ├── config/                  # cities, pollutants, AQI breakpoints, source priority (YAML)
 ├── dashboard/               # Streamlit app and pages
 ├── data/                    # fixtures and local landing area
-├── docs/                    # architecture, data sources, data dictionary, evidence, screenshots
+├── docs/                    # architecture, data sources, data dictionary, evidence
 ├── mlops/
 │   ├── src/aqi_mlops/       # features, training, registry, serving, monitoring
 │   └── tests/
